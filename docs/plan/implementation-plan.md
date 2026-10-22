@@ -8,7 +8,8 @@ Each phase is sized for one AI agent session. Architecture and domain details ar
 |---|---|---|
 | P0 | Repository, guardrails, module template | Built (merge pending) |
 | P0a | Guardrail follow-ups | Next |
-| P1 | Shared kernel and test foundation | Todo |
+| P1a | Shared kernel | Next |
+| P1b | Test foundation and acceptance scenario | Todo |
 | P2 | Platform infrastructure | Todo |
 | P3 | Identity and Access | Todo |
 | P4 | Audit | Todo |

@@ -17,7 +17,9 @@
   - Compose files must not bind-mount repo folders. Use named volumes.
   - Windows path conventions in docs: use `curl.exe`, not `curl`.
   - Everything must also pass on Linux, since CI runs on ubuntu and windows.
-- The database port comes from DB_PORT (default 5432).
+  - Never delete, revert, or overwrite a file you did not create in this phase. If the working tree has unexpected changes or untracked files, leave them alone, list them in the handoff, and continue. This applies even to files outside the phase scope.
+  - The database port comes from DB_PORT (default 5432).
+  - docs/backlog.md (append only) and docs/phases/<phase>-handoff.md are always in scope for every phase, in addition to the paths listed in the prompt.
 
 ## Commands (every phase must keep these working)
 pnpm install        install
