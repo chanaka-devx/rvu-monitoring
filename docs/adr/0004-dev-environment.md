@@ -32,7 +32,7 @@ both CI environments.
 - All repository automation is cross-platform Node.js under `tools/`. No bash,
   PowerShell-only syntax or hard-coded path separators.
 - Files are LF via `.gitattributes` and `.editorconfig`.
-- CI runs a Windows/Linux matrix and never runs Docker or `doctor`.
+- CI runs a Windows/Linux matrix and never runs Docker or `env:check`.
 
 ## Consequences
 
@@ -60,7 +60,8 @@ both CI environments.
 
 ## Alternatives considered
 
-- Docker Desktop on Windows. Rejected by project policy and detected by doctor.
+- Docker Desktop on Windows. Rejected by project policy and detected by the
+  environment check.
 - Native Windows Postgres. Rejected because it diverges from CI and container
   reproducibility.
 - Bash scripts. Rejected because they do not run on the Windows CI runner and

@@ -24,7 +24,7 @@ function renderTemplate(template, name) {
 function copyTemplates(sourceDir, destinationDir, name) {
   for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
     const sourcePath = path.join(sourceDir, entry.name);
-    const destinationName = entry.name.replace(/\.tpl$/, '');
+    const destinationName = renderTemplate(entry.name.replace(/\.tpl$/, ''), name);
     const destinationPath = path.join(destinationDir, destinationName);
 
     if (entry.isDirectory()) {

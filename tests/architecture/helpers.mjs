@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -57,6 +59,34 @@ export function runDepcruise(
   };
 }
 
+export function runDepcruiseWithLinkedPackages(fixtureName, links) {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rvu-architecture-'));
+
+  try {
+    fs.cpSync(path.join(fixturesRoot, fixtureName), tempRoot, { recursive: true });
+
+    for (const [packageName, target] of Object.entries(links)) {
+      const linkPath = path.join(tempRoot, 'node_modules', ...packageName.split('/'));
+      fs.mkdirSync(path.dirname(linkPath), { recursive: true });
+      fs.symlinkSync(
+        path.join(tempRoot, target),
+        linkPath,
+        process.platform === 'win32' ? 'junction' : 'dir'
+      );
+    }
+
+    return runDepcruise(tempRoot);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
+
 export function violationRuleNames(report) {
   return (report.summary?.violations ?? []).map((violation) => violation.rule?.name);
+}
+
+export function violationFromPaths(report, ruleName) {
+  return (report.summary?.violations ?? [])
+    .filter((violation) => violation.rule?.name === ruleName)
+    .map((violation) => violation.from);
 }

@@ -66,12 +66,11 @@ Run from a short local path such as `C:\dev\rvu-monitoring`:
 
 ```powershell
 pnpm install
-pnpm run doctor
+pnpm env:check
 ```
 
-`pnpm run doctor` checks Node 22, pnpm, the OneDrive path rule and the WSL2
-Docker setup. Use the `run` form because pnpm reserves `pnpm doctor` for its own
-built-in command.
+`pnpm env:check` checks Node 22, pnpm, the OneDrive path rule and the WSL2
+Docker setup.
 
 ### 4. Start Postgres and verify
 
@@ -104,7 +103,7 @@ curl.exe http://localhost:3000/api/v1/health/ready
 | Command | Purpose |
 | --- | --- |
 | `pnpm install` | Install the workspace |
-| `pnpm run doctor` | Check the Windows/WSL toolchain |
+| `pnpm env:check` | Check the Windows/WSL toolchain |
 | `pnpm typecheck` | TypeScript across the workspace |
 | `pnpm lint` | ESLint flat config |
 | `pnpm arch` | dependency-cruiser boundary check |
@@ -142,6 +141,16 @@ docs/phases/           Phase handoffs
 - `application/` may import only its own `domain/` and `application/` code plus
   `packages/shared-kernel`.
 - Other modules are imported only through `modules/<name>/public-api.ts`.
+- `apps/*` is the composition root: it may import a module only through
+  `public-api.ts` or `<name>.module.ts`, and a package only through its entry
+  point. Modules and packages never import `apps/*`.
+- `packages/shared-kernel` imports no other workspace code; `packages/testing`
+  and `packages/contracts` may import only `packages/shared-kernel`.
+- `domain/` and `application/` must not import `packages/contracts`. Define a
+  port and implement it in `infrastructure/`.
+- Domain and application code is deterministic: no `Date.now()`, zero-argument
+  `new Date()`, `Math.random`, `parseFloat` or `Number.parseFloat`. Use the
+  `Clock` port, the `IdGenerator` port and `DecimalValue`.
 - Circular dependencies are forbidden.
 - Under `modules/`, default exports and explicit `any` are forbidden.
 
@@ -151,11 +160,13 @@ Generate a new module with:
 pnpm gen:module billing
 ```
 
-The generator creates the four layers, `public-api.ts`, a README and a passing
-sample test.
+The generator creates the four layers, `public-api.ts`, the
+`<name>.module.ts` NestJS wiring file, a README and a passing sample test. Run
+`pnpm install` once after generating a module so the workspace links its
+`@nestjs/common` dependency.
 
 ## CI
 
 GitHub Actions runs typecheck, lint, architecture and unit tests on
-`ubuntu-latest` and `windows-latest`. Docker and the environment doctor are not
+`ubuntu-latest` and `windows-latest`. Docker and the environment check are not
 run in CI.

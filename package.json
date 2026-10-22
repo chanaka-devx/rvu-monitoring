@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "doctor": "node tools/doctor.mjs",
+    "env:check": "node tools/doctor.mjs",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
     "arch": "node tools/arch.mjs",

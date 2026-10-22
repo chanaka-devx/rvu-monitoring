@@ -175,7 +175,11 @@ export function formatDoctorResult(result) {
     lines.push(`FAIL ${failure.message}`);
   }
 
-  lines.push(result.ok ? 'Doctor found no blocking issues.' : 'Doctor found blocking issues.');
+  lines.push(
+    result.ok
+      ? 'Environment check found no blocking issues.'
+      : 'Environment check found blocking issues.'
+  );
   return lines.join('\n');
 }
 

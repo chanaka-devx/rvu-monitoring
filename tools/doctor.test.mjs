@@ -31,7 +31,7 @@ function baseOptions(overrides = {}) {
   };
 }
 
-describe('doctor', () => {
+describe('environment check', () => {
   it('passes on a healthy Windows environment', () => {
     const result = evaluateDoctor(baseOptions());
 
@@ -162,5 +162,6 @@ describe('doctor', () => {
 
     expect(output).toContain('FAIL');
     expect(output).toContain('WARN');
+    expect(output).toContain('Environment check found blocking issues.');
   });
 });

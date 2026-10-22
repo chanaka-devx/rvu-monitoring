@@ -28,8 +28,8 @@ Use the following baseline:
   default exports are banned under `modules/`.
 - **dependency-cruiser 18** for module boundaries, circular dependencies and
   architecture-as-tests fixtures.
-- **Node scripts** under `tools/` for database, doctor, verify and architecture
-  commands. Package scripts do not contain shell-specific syntax.
+- **Node scripts** under `tools/` for database, environment check, verify and
+  architecture commands. Package scripts do not contain shell-specific syntax.
 
 The data-access library (ORM/query builder/migrations) is explicitly deferred to
 P2. No data-access dependency is introduced in P0.
@@ -45,9 +45,8 @@ P2. No data-access dependency is introduced in P0.
 
 ### Negative
 
-- pnpm's built-in `pnpm doctor` command shadows the repository's `doctor`
-  script. The repository check must be invoked as `pnpm run doctor`; this is a
-  known AGENTS.md tension recorded in the P00 handoff.
+- The repository environment check is invoked as `pnpm env:check`, so it is not
+  confused with pnpm's built-in `pnpm doctor` command.
 - SWC and Vitest add native dependencies and a larger install footprint.
 - dependency-cruiser's JavaScript configuration must avoid functions in the
   exported object because the configuration is cloned.

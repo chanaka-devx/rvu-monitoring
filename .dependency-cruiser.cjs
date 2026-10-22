@@ -5,49 +5,95 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function listModules(rootDir) {
-  const modulesDir = path.join(rootDir, 'modules');
-  if (!fs.existsSync(modulesDir)) {
+function toPosix(value) {
+  return value.split(path.sep).join('/');
+}
+
+function listDirectories(rootDir, name) {
+  const directory = path.join(rootDir, name);
+  if (!fs.existsSync(directory)) {
     return [];
   }
 
   return fs
-    .readdirSync(modulesDir, { withFileTypes: true })
+    .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
 }
 
-const bannedDomainPackages = [
-  '@nestjs',
-  '@mikro-orm',
-  '@prisma',
-  'better-sqlite3',
-  'drizzle-orm',
-  'ioredis',
-  'knex',
-  'mongodb',
-  'mongoose',
-  'mysql2?',
-  'pg',
-  'prisma',
-  'redis',
-  'sequelize',
-  'sqlite3?',
-  'typeorm'
-];
+function listModules(rootDir) {
+  return listDirectories(rootDir, 'modules');
+}
 
-const bannedDomainDependencies = [
-  '^(?:node:)?(?:fs|net)(?:/|$)',
-  ...bannedDomainPackages.flatMap((packageName) => [
-    `^${packageName}(?:/|$)`,
-    `(^|/)node_modules/${packageName}(?:/|$)`
-  ])
-];
+function readPackageEntry(packageDir) {
+  const packageJsonPath = path.join(packageDir, 'package.json');
+
+  if (!fs.existsSync(packageJsonPath)) {
+    return { name: undefined, entry: 'src/index.ts' };
+  }
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const exportsField = manifest.exports && manifest.exports['.'];
+    const fromExports =
+      typeof exportsField === 'string'
+        ? exportsField
+        : (exportsField && (exportsField.default ?? exportsField.types)) ?? undefined;
+    const candidate = fromExports ?? manifest.main ?? manifest.types ?? './src/index.ts';
+
+    return {
+      name: manifest.name,
+      entry: toPosix(path.normalize(candidate.replace(/^\.\//, '')))
+    };
+  } catch {
+    return { name: undefined, entry: 'src/index.ts' };
+  }
+}
+
+function listPackages(rootDir) {
+  return listDirectories(rootDir, 'packages').map((name) => {
+    const packageDir = path.join(rootDir, 'packages', name);
+    const { name: packageName, entry } = readPackageEntry(packageDir);
+
+    return {
+      name: packageName,
+      entry: toPosix(path.join('packages', name, entry))
+    };
+  });
+}
 
 function buildConfig(rootDir = process.cwd()) {
   const moduleNames = listModules(rootDir);
+  const packages = listPackages(rootDir);
   const forbidden = [];
+
+  const bannedDomainPackages = [
+    '@nestjs',
+    '@mikro-orm',
+    '@prisma',
+    'better-sqlite3',
+    'drizzle-orm',
+    'ioredis',
+    'knex',
+    'mongodb',
+    'mongoose',
+    'mysql2?',
+    'pg',
+    'prisma',
+    'redis',
+    'sequelize',
+    'sqlite3?',
+    'typeorm'
+  ];
+
+  const bannedDomainDependencies = [
+    '^(?:node:)?(?:fs|net)(?:/|$)',
+    ...bannedDomainPackages.flatMap((packageName) => [
+      `^${packageName}(?:/|$)`,
+      `(^|/)node_modules/${packageName}(?:/|$)`
+    ])
+  ];
 
   for (const name of moduleNames) {
     const escapedName = escapeRegExp(name);
@@ -96,12 +142,108 @@ function buildConfig(rootDir = process.cwd()) {
     }
   }
 
-  forbidden.push({
-    name: 'apps-no-workspace-internals',
-    comment: 'Applications must not import modules or packages directly.',
+  const modulePackageNames = moduleNames
+    .map((name) => readPackageEntry(path.join(rootDir, 'modules', name)).name)
+    .filter(Boolean);
+  const allowedModuleEntries = [
+    ...moduleNames.flatMap((name) => {
+      const escapedName = escapeRegExp(name);
+      return [
+        `modules/${escapedName}/public-api\\.ts`,
+        `modules/${escapedName}/${escapedName}\\.module\\.ts`
+      ];
+    }),
+    ...modulePackageNames.map((packageName) => escapeRegExp(packageName))
+  ];
+  const moduleEntryRule = {
+    name: 'apps-only-module-entrypoints',
+    comment:
+      'Applications may import a module only through its public-api.ts or its <name>.module.ts wiring file.',
     severity: 'error',
     from: { path: '^apps/' },
-    to: { path: '^(?:modules|packages)/' }
+    to: {
+      path:
+        modulePackageNames.length > 0
+          ? `^(?:modules/|(?:${modulePackageNames.map(escapeRegExp).join('|')})/)`
+          : '^modules/'
+    }
+  };
+  if (allowedModuleEntries.length > 0) {
+    moduleEntryRule.to.pathNot = `^(?:${allowedModuleEntries.join('|')})$`;
+  }
+  forbidden.push(moduleEntryRule);
+
+  const packageNames = packages.map((entry) => entry.name).filter(Boolean);
+  const allowedPackageEntries = [
+    ...packages.map((entry) => escapeRegExp(entry.entry)),
+    ...packageNames.map((packageName) => escapeRegExp(packageName))
+  ];
+  const packageEntryRule = {
+    name: 'apps-only-package-entrypoints',
+    comment:
+      'Applications may import a workspace package only through its package entry point, never a deep src/** path.',
+    severity: 'error',
+    from: { path: '^apps/' },
+    to: {
+      path:
+        packageNames.length > 0
+          ? `^(?:packages/|(?:${packageNames.map(escapeRegExp).join('|')})/)`
+          : '^packages/'
+    }
+  };
+  if (allowedPackageEntries.length > 0) {
+    packageEntryRule.to.pathNot = `^(?:${allowedPackageEntries.join('|')})$`;
+  }
+  forbidden.push(packageEntryRule);
+
+  forbidden.push({
+    name: 'workspace-no-app-imports',
+    comment: 'Modules and packages must never import an application.',
+    severity: 'error',
+    from: { path: '^(?:modules|packages)/' },
+    to: { path: '^apps/' }
+  });
+
+  forbidden.push({
+    name: 'shared-kernel-no-workspace-imports',
+    comment: 'The shared kernel must not import any other workspace code.',
+    severity: 'error',
+    from: { path: '^packages/shared-kernel/' },
+    to: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: '^packages/shared-kernel/'
+    }
+  });
+
+  forbidden.push({
+    name: 'testing-only-shared-kernel',
+    comment: 'The testing package may import only the shared kernel.',
+    severity: 'error',
+    from: { path: '^packages/testing/' },
+    to: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: '^packages/(?:testing|shared-kernel)/'
+    }
+  });
+
+  forbidden.push({
+    name: 'contracts-only-shared-kernel',
+    comment: 'The contracts package may import only the shared kernel.',
+    severity: 'error',
+    from: { path: '^packages/contracts/' },
+    to: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: '^packages/(?:contracts|shared-kernel)/'
+    }
+  });
+
+  forbidden.push({
+    name: 'domain-and-application-no-contracts',
+    comment:
+      'Domain and application code must not import packages/contracts. Define a port and implement it in infrastructure instead.',
+    severity: 'error',
+    from: { path: '^modules/[^/]+/(?:domain|application)/' },
+    to: { path: '^packages/contracts/' }
   });
 
   forbidden.push({

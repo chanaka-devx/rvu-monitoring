@@ -14,6 +14,9 @@
     "build": "tsc -p tsconfig.json --noEmit false --outDir dist",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@nestjs/common": "^12.2.0"
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }

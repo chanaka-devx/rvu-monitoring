@@ -58,6 +58,7 @@ describe('module generator', () => {
       'package.json',
       'tsconfig.json',
       'public-api.ts',
+      'sample.module.ts',
       'index.test.ts',
       path.join('domain', 'index.ts'),
       path.join('application', 'index.ts'),

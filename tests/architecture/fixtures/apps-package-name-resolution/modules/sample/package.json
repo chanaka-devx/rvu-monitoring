@@ -1,0 +1,7 @@
+{
+  "name": "@rvu/module-sample",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./public-api.ts",
+  "types": "./public-api.ts"
+}

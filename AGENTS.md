@@ -20,7 +20,7 @@
 
 ## Commands (every phase must keep these working)
 pnpm install        install
-pnpm doctor         verify the local environment (Windows toolchain + WSL Docker)
+pnpm env:check      verify the local environment (Windows toolchain + WSL Docker)
 pnpm typecheck      tsc across workspace
 pnpm lint           eslint
 pnpm arch           dependency-cruiser boundary check
