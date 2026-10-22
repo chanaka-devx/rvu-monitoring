@@ -51,7 +51,7 @@ both CI environments.
 - Testcontainers integration tests require `DOCKER_HOST` to be exported in the
   developer shell from P2 onwards.
 - The P0 rule that apps may not import modules/packages conflicts with the usual
-  composition-root role of `apps/api`; see the P00 handoff.
+  Resolved in P0a, see ADR 0005..
 
 ### Follow-up
 

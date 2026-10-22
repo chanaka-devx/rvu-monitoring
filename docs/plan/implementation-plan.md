@@ -213,11 +213,17 @@ Read first: AGENTS.md, docs/plan/implementation-plan.md (phase {PXX}),
 docs/plan/architecture.md, docs/phases/{previous}-handoff.md, docs/adr/*,
 and the public-api.ts of: {dependency modules}.
 
+Skills: before planning, read .agents/skills/<name>/SKILL.md for the baseline
+(test-driven-development, typescript-pro) and these phase skills:
+{up to four skills}. List the skills you loaded in your plan. AGENTS.md hard
+rules, ADRs and this prompt win over skill guidance; record any skill guidance
+you declined in the handoff.
+
 Environment: developer runs on Windows (Node 22, pnpm, git, this agent). Docker
 runs only inside WSL2. CI runs on ubuntu-latest and windows-latest. Scripts must
 be cross-platform Node scripts.
 
-Scope: only these paths may change: {module paths}.
+Scope: only these paths may change: {module paths}. Never modify .agents/.
 Before writing code: reply with a numbered plan and the file list, then wait
 for my approval.
 
@@ -226,7 +232,8 @@ Patterns required: {patterns}.
 
 Process: (1) write failing tests for the gate below, (2) implement,
 (3) run pnpm typecheck, lint, arch, test, (4) write
-docs/phases/{PXX}-handoff.md with the public API, decisions, and gaps.
+docs/phases/{PXX}-handoff.md with the public API, decisions, skills used, and
+gaps.
 
 Gate (all must pass): {gate}.
 If a contract from another module is wrong or missing, stop and record it in
