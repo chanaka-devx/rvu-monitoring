@@ -247,6 +247,34 @@ function buildConfig(rootDir = process.cwd()) {
   });
 
   forbidden.push({
+    name: 'testing-package-only-from-tests',
+    comment:
+      'Only test files may import @rvu/testing. Production code must never depend on test helpers, synthetic data or fake clocks. packages/testing itself is the provider and may import its own code.',
+    severity: 'error',
+    from: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: String.raw`(?:\.(?:int\.)?test\.(?:ts|mjs)$|^packages/testing/)`
+    },
+    to: {
+      path: String.raw`^(?:@rvu/testing|packages/testing)(?:/|$)|(^|/)node_modules/@rvu/testing(?:/|$)`
+    }
+  });
+
+  forbidden.push({
+    name: 'test-tooling-only-from-tests',
+    comment:
+      'Only test files may import test tooling (vitest, fast-check, testcontainers, @testcontainers/*). packages/testing itself is the provider.',
+    severity: 'error',
+    from: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: String.raw`(?:\.(?:int\.)?test\.(?:ts|mjs)$|^packages/testing/)`
+    },
+    to: {
+      path: String.raw`^(?:vitest|fast-check|testcontainers|@testcontainers/[^/]+)$|(^|/)node_modules/(?:@testcontainers/|(?:vitest|fast-check|testcontainers)(?:/|$))`
+    }
+  });
+
+  forbidden.push({
     name: 'no-circular',
     comment: 'Circular dependencies are not allowed.',
     severity: 'error',
@@ -254,11 +282,13 @@ function buildConfig(rootDir = process.cwd()) {
     to: { circular: true }
   });
 
+  const excludePath = String.raw`^(?!.*(?:^|/)node_modules/(?:@testcontainers/|(?:vitest|fast-check|testcontainers)(?:/|$))).*(?:^|/)(?:dist|coverage|\.turbo)/`;
+
   return {
     forbidden,
     options: {
       doNotFollow: { path: '(^|/)node_modules/' },
-      exclude: { path: '(^|/)(node_modules|dist|coverage|\\.turbo)/' }
+      exclude: { path: excludePath }
     }
   };
 }
