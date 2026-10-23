@@ -29,7 +29,8 @@ pnpm lint           eslint
 pnpm arch           dependency-cruiser boundary check
 pnpm test           unit tests
 pnpm test:int       integration tests (Testcontainers via DOCKER_HOST)
-pnpm verify         typecheck + lint + arch + test (+ test:int when present)
+pnpm verify         typecheck + lint + arch + test + test:int
+pnpm verify:fast    typecheck + lint + arch + test (no Docker needed)
 pnpm db:up          start Postgres (waits until healthy)
 pnpm db:down        stop Postgres
 pnpm db:ps          show container status

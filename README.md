@@ -52,13 +52,21 @@ repository inside OneDrive.
    wsl docker compose version
    ```
 
-5. From phase P2, Testcontainers needs the Docker API exposed on
-   `tcp://localhost:2375`. Configure the WSL Docker daemon to listen on
-   `tcp://0.0.0.0:2375` and set:
-
    ```powershell
    $env:DOCKER_HOST = "tcp://localhost:2375"
    ```
+
+   Keep the daemon bound to loopback only:
+
+   ```json
+   { "hosts": ["unix:///var/run/docker.sock", "tcp://127.0.0.1:2375"] }
+   ```
+
+   With systemd, add a drop-in that resets `ExecStart` so the daemon.json
+   `hosts` apply, then restart `docker`: `ExecStart=` followed by
+   `ExecStart=/usr/bin/dockerd` in
+   `/etc/systemd/system/docker.service.d/override.conf`. Do not install Docker
+   Desktop and do not bind the endpoint to `0.0.0.0`.
 
 ### 3. Install and check the repository
 
@@ -108,8 +116,9 @@ curl.exe http://localhost:3000/api/v1/health/ready
 | `pnpm lint` | ESLint flat config |
 | `pnpm arch` | dependency-cruiser boundary check |
 | `pnpm test` | Unit and architecture tests |
-| `pnpm test:int` | Integration tests (skips when none exist) |
+| `pnpm test:int` | Integration tests (Testcontainers PostgreSQL; skips when none exist) |
 | `pnpm verify` | typecheck + lint + arch + test + test:int |
+| `pnpm verify:fast` | typecheck + lint + arch + test (no Docker needed) |
 | `pnpm db:up` | Start Postgres and wait for healthy |
 | `pnpm db:down` | Stop Postgres |
 | `pnpm db:ps` | Show container status |
@@ -165,8 +174,19 @@ The generator creates the four layers, `public-api.ts`, the
 `pnpm install` once after generating a module so the workspace links its
 `@nestjs/common` dependency.
 
+## Integration tests
+
+`*.int.test.ts` files run real PostgreSQL through Testcontainers
+(`pnpm test:int`). One container is started per run; each test file gets its
+own throwaway `rvu_test_<hex>` database. On Windows, export
+`DOCKER_HOST=tcp://localhost:2375` first (the tool preflight fails fast with
+an actionable message when it is missing). Linux uses the local Docker socket.
+`pnpm verify` includes `test:int`; `pnpm verify:fast` skips it.
+
 ## CI
 
 GitHub Actions runs typecheck, lint, architecture and unit tests on
-`ubuntu-latest` and `windows-latest`. Docker and the environment check are not
-run in CI.
+`ubuntu-latest` and `windows-latest`, plus a separate `integration` job on
+`ubuntu-latest` only that runs the Testcontainers suite. Windows does not run
+integration tests in CI. Docker and the environment check are not run in the
+verify matrix.
