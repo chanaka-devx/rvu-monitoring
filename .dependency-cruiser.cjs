@@ -238,6 +238,71 @@ function buildConfig(rootDir = process.cwd()) {
   });
 
   forbidden.push({
+    name: 'platform-only-shared-kernel',
+    comment:
+      'The platform package may import only the shared kernel among workspace code. Test files may use @rvu/testing.',
+    severity: 'error',
+    from: { path: '^packages/platform/', pathNot: '\\.(?:int\\.)?test\\.tsx?$' },
+    to: {
+      path: '^(?:apps|modules|packages)/',
+      pathNot: '^packages/(?:platform|shared-kernel)/'
+    }
+  });
+
+  forbidden.push({
+    name: 'platform-no-banned-frameworks',
+    comment:
+      'The platform package must not depend on NestJS or HTTP/API framework packages.',
+    severity: 'error',
+    from: { path: '^packages/platform/' },
+    to: {
+      path: bannedDomainPackages
+        .filter((packageName) => packageName !== 'pg')
+        .flatMap((packageName) => [
+          `^${packageName}(?:/|$)`,
+          `(^|/)node_modules/${packageName}(?:/|$)`,
+          `(^|/)node_modules/[^/]+/node_modules/${packageName}(?:/|$)`
+        ])
+    }
+  });
+
+  forbidden.push({
+    name: 'modules-domain-application-no-db-runtime',
+    comment:
+      'Domain and application code must not import the platform package or database runtime libraries. Use ports and let infrastructure wire them.',
+    severity: 'error',
+    from: { path: '^modules/[^/]+/(?:domain|application)/' },
+    to: {
+      path: [
+        '^packages/platform/',
+        ...['kysely', 'zod'].flatMap((packageName) => [
+          `^${packageName}(?:/|$)`,
+          `(^|/)node_modules/${packageName}(?:/|$)`,
+          `(^|/)node_modules/[^/]+/node_modules/${packageName}(?:/|$)`
+        ])
+      ]
+    }
+  });
+
+  forbidden.push({
+    name: 'pg-and-job-queues-only-in-platform-or-tests',
+    comment:
+      'pg, pg-boss and database drivers are only wired in the platform or testing packages. Test files are exempt.',
+    severity: 'error',
+    from: {
+      path: '^.*',
+      pathNot: '(?:^packages/(?:platform|testing)/|\\.(?:int\\.)?test\\.(?:ts|tsx|mjs)$)'
+    },
+    to: {
+      path: ['pg-boss'].flatMap((packageName) => [
+        `^${packageName}(?:/|$)`,
+        `(^|/)node_modules/${packageName}(?:/|$)`,
+        `(^|/)node_modules/[^/]+/node_modules/${packageName}(?:/|$)`
+      ])
+    }
+  });
+
+  forbidden.push({
     name: 'domain-and-application-no-contracts',
     comment:
       'Domain and application code must not import packages/contracts. Define a port and implement it in infrastructure instead.',

@@ -173,3 +173,127 @@ Commit: `fix(p2pre): banned-import rules must see resolved node_modules imports`
 - `pnpm db:check`/`db:up` docs unchanged in this stage; quickstart gets its
   full update in Stage E (per the phase prompt).
 - One lint nit fixed (`repoRoot` unused in the preflight test).
+
+
+## Stage B (commit `feat(p2b)`)
+
+### Scope delivered
+
+- `packages/platform` new workspace package (`@rvu/platform`): config
+  loading/validation, pg pool factory, Kysely `createDb`, migration runner
+  and CLI wiring.
+- `config.ts`: `loadPlatformConfig(env)` with zod (not strict; ignores extra
+  keys), fields `DATABASE_URL`, `APP_DATABASE_URL` (postgres URLs), numeric
+  coercion for `DB_POOL_MAX` / `DB_STATEMENT_TIMEOUT_MS`, enum
+  `LOG_LEVEL`; `PlatformConfigError` collects every failing key in one
+  message (`-DATABASE_URL: Required`) and never prints secret values;
+  `redactUrl` masks the password. 7 unit tests.
+- `pool.ts`: `createPool(url, {max, statementTimeoutMs, applicationName})`.
+  Statement timeout is applied through the startup-packet `options` param
+  (`-c statement_timeout=...`), so it applies to the session before any
+  query (verified: `SHOW statement_timeout` = `12300ms` when set to 12300).
+  Type parsers: per-pool `types.getTypeParser` overriding NUMERIC (1700),
+  DATE (1082), INT8 (20) to return strings and delegating all other OIDs
+  (incl. binary format) to `pg.types`. timestamptz still parses to `Date`.
+- `database.ts`: `createDb<DB>(pool)` (Kysely PostgresDialect). No DB types
+  yet - Stage D repositories define their own.
+- Migration runner: `migrations/migration.ts` (filename grammar
+  `NNNN_snake_name.sql`, sha256 checksum with CRLF->LF normalization,
+  migrationKey), `migrations/discovery.ts` (scans
+  `packages/platform/migrations` + `modules/*/infrastructure/migrations`,
+  sorts by owner then version, rejects invalid names, duplicate versions
+  per owner and gaps, `MigrationDiscoveryError`; 4 tests via tmpdir
+  repos), `migrations/runner.ts` (`runMigrations({pool, sources})`:
+  advisory lock 70011001, ensures `platform.schema_migrations(owner,
+  version, name, checksum, applied_at)`, checksum verification of applied
+  migrations (tamper fails), duplicate + gap checks on the source list,
+  each migration in its own transaction with INSERT of the bookkeeping row;
+  6 int tests including two concurrent runners).
+- `tools/migrate.mjs` (`pnpm db:migrate`): reads `.env` via
+  `util.parseEnv` (process env wins), composes `DATABASE_URL` (and fallback
+  `APP_DATABASE_URL`) from `POSTGRES_*`/`DB_PORT` when absent, then runs
+  `packages/platform/src/migrate.ts` with `node --import tsx`. Output: 
+  `Applied owner/version (name)`, `Database is up to date.`, target printed
+  via `redactUrl`; non-zero exit on failure.
+- Arch rules (B6) in `.dependency-cruiser.cjs`:
+  `platform-only-shared-kernel` (workspace imports; test files exempt),
+  `platform-no-banned-frameworks` (NestJS/ORM/etc; resolved
+  `node_modules/[^/]+/node_modules/` patterns; `pg` not banned for
+  platform), `modules-domain-application-no-db-runtime` (no
+  `packages/platform`, `kysely`, `zod` in domain/application),
+  `pg-and-job-queues-only-in-platform-or-tests`. New fixtures + tests:
+  `platform-imports-testing`, `platform-nest-resolved`
+  (resolved-externals stub convention), `domain-platform`; split into
+  `tests/architecture/arch-platform.test.mjs`.
+- ADR 0011 (Kysely typed SQL in platform) and ADR 0012 (tsx migration CLI,
+  env composition). `AGENTS.md` Commands gained `db:migrate`.
+
+### Evidence (gates)
+
+- `pnpm verify` (DOCKER_HOST set): all checks passed; unit 278 tests green,
+  int 13 tests green (3 suites: smoke, platform pool, migration runner).
+- `pnpm verify:fast`: all checks passed.
+- `pnpm db:up` -> `pnpm db:migrate` -> applied `platform/1
+  (install_platform)`; second run `Database is up to date.`; target printed
+  as `postgres://rvu:***@localhost:5432/rvu_monitoring`.
+- `pnpm db:down` after; dev containers untouched.
+
+### Decisions
+
+1. **Statement timeout via startup packet** (`options` connection
+   parameter) instead of a connection-level SET, to avoid a race where pool
+   clients could run queries before a SET lands. Verified through
+   `SHOW statement_timeout`.
+2. **Type parsers delegate by default.** First cut returned `undefined` for
+   unknown OIDs and broke pg-pool (`_parsers[i] is not a function`);
+   final version only overrides the three target OIDs and delegates the
+   rest (incl. binary) to `pg.types.getTypeParser`.
+3. **safe-regex complaint on `[^/]*` store prefixes.** The first
+   dependency-cruiser rule variants used
+   `(^|/)node_modules/(?:\\.pnpm[^/]*/)?name` which dependency-cruiser
+   rejects as unsafe via safe-regex. Replaced with
+   `(^|/)node_modules/[^/]+/node_modules/name` (safe, and still catches the
+   pnpm dedupe layout).
+4. **Arch test split.** Running 24 dependency-cruiser fixtures sequentially
+   in one vitest worker blocked the worker longer than vitest's 60 s RPC
+   timeout (`Timeout calling onTaskUpdate`, unhandled error aborting the
+   unit run). Moved the three new platform-boundary tests into
+   `arch-platform.test.mjs` (second worker file); each file now stays well
+   under the limit.
+5. **`tsx` runs the migration CLI** (ADR 0012) with a root devDependency;
+   `tools/migrate.mjs` spawns `node --import tsx` (no shell on win32:
+   `spawnSync(process.execPath, [args])` quotes fine without `shell`),
+   composes DATABASE_URL from compose vars. APP_DATABASE_URL defaults to
+   the admin URL for now (no restricted role until Stage D).
+6. **Runner gap/duplicate semantics** duplicated in the runner
+   (`assertNoGaps`) so a hand-built source list fails fast before touching
+   the database; discovery normally guarantees this for scanned repos.
+7. **Test isolation via per-test owners** (inta..intf): the shared test
+   database persists `platform.schema_migrations` rows within a run, so
+   tamper/no-op/concurrency tests use distinct owners to avoid cross-test
+   checksum collisions.
+
+### Skills used
+
+- Baseline: test-driven-development (config error-redaction test was the
+  red before the fix; runner tamper/gap/duplicate int tests written against
+  expected failure messages before implementation), typescript-pro
+  (module/moduleResolution constraints: `import.meta` requires
+  `module: node16/...`; worked around by passing RVU_REPO_ROOT from the
+  .mjs tool instead of diverging the base tsconfig).
+- Phase: postgres-best-practices (parameterized bookkeeping INSERT,
+  advisory lock, per-migration transaction), database-design (UUIDv7
+  policy untouched here, migrations only install bookkeeping schemas;
+  NUMERIC/DATE/INT8 as strings enforced in the pool).
+
+### Gaps
+
+- `docker-compose.yml` untouched (Stage B did not need it); dev database
+  now has `platform.schema_migrations` after `db:migrate` was exercised.
+- `pnpm db:migrate` with a remote/odd `.env` containing `DATABASE_URL`
+  already set is untested (tool defers to env; platform validation catches
+  bad URLs).
+- CI green check for the `integration` job still pending owner push.
+- vitest unit-run worker RPC timeout (~60 s) is a standing constraint:
+  keep per-fixture-heavy test files short or split; watch P7 when more
+  arch rules/fixtures accumulate.

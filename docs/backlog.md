@@ -31,3 +31,9 @@
 - Confirm uuid ^14 works when apps/api imports the kernel (ESM-only risk), and
   that CI uses Node 22.12 or newer. Check in P2.
 - Skills map: P1b uses clean-code only (ddd-tactical-patterns was P1a).
+- Stage B note: vitest worker RPC timeout (~60 s) caps how much sequential
+  dependency-cruiser spawning one test file may do; split heavy fixture
+  files (see arch-platform.test.mjs) and re-check when adding rules in P7.
+- Stage B note: APP_DATABASE_URL currently defaults to the admin URL in
+  tools/migrate.mjs; Stage D must introduce the rvu_app restricted role and
+  tighten this.
