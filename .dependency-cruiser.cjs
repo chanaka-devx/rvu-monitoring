@@ -258,7 +258,7 @@ function buildConfig(rootDir = process.cwd()) {
     forbidden,
     options: {
       doNotFollow: { path: '(^|/)node_modules/' },
-      exclude: { path: '(^|/)(node_modules|dist|coverage|\\.turbo)/' }
+      exclude: { path: '(^|/)(dist|coverage|\\.turbo)/' }
     }
   };
 }
