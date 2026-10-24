@@ -16,12 +16,15 @@
     "test": "vitest run",
     "test:int": "node tools/test-int.mjs",
     "verify": "node tools/verify.mjs",
+    "verify:fast": "node tools/verify.mjs --fast",
     "db:up": "node tools/db.mjs up",
     "db:down": "node tools/db.mjs down",
     "db:ps": "node tools/db.mjs ps",
     "db:check": "node tools/db.mjs check",
+    "db:migrate": "node tools/migrate.mjs",
+    "db:bootstrap": "node tools/bootstrap.mjs",
     "gen:module": "node tools/generate-module/index.mjs",
-    "dev:api": "pnpm --filter @rvu/api dev"
+    "dev:api": "node tools/run-api.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -30,6 +33,7 @@
     "dependency-cruiser": "^18.7.0",
     "eslint": "^9.39.5",
     "globals": "^16.5.0",
+    "tsx": "^4.23.15",
     "turbo": "^2.11.10",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.0",
@@ -37,6 +41,9 @@
     "vitest": "^3.2.7"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@swc/core", "esbuild"]
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild"
+    ]
   }
 }

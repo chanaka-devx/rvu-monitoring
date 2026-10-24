@@ -4,6 +4,7 @@ import {
   fixturesRoot,
   runDepcruise,
   runDepcruiseWithLinkedPackages,
+  runDepcruiseWithResolvedExternals,
   violationFromPaths,
   violationRuleNames
 } from './helpers.mjs';
@@ -23,6 +24,19 @@ describe('architecture guardrails', () => {
     const { report } = runFixture('domain-nest');
 
     expect(violationRuleNames(report)).toContain('module-alpha-domain-no-external-frameworks');
+  });
+
+  it('rejects a resolved node_modules NestJS import in domain code', () => {
+    const { report } = runDepcruiseWithResolvedExternals('domain-nest-resolved', {
+      '@nestjs/common': path.join('stub-package')
+    });
+
+    const violations = report.summary.violations.filter(
+      (violation) => violation.rule?.name === 'module-alpha-domain-no-external-frameworks'
+    );
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0].to).toContain('node_modules/@nestjs/common');
   });
 
   it('rejects ORM imports in domain code', () => {

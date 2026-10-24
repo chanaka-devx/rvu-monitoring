@@ -29,11 +29,14 @@ pnpm lint           eslint
 pnpm arch           dependency-cruiser boundary check
 pnpm test           unit tests
 pnpm test:int       integration tests (Testcontainers via DOCKER_HOST)
-pnpm verify         typecheck + lint + arch + test (+ test:int when present)
+pnpm verify         typecheck + lint + arch + test + test:int
+pnpm verify:fast    typecheck + lint + arch + test (no Docker needed)
 pnpm db:up          start Postgres (waits until healthy)
 pnpm db:down        stop Postgres
 pnpm db:ps          show container status
 pnpm db:check       confirm localhost:DB_PORT is reachable from Windows
+pnpm db:migrate     run the TS migration runner (schema_migrations bookkeeping)
+pnpm db:bootstrap   provision the local restricted runtime database role
 
 ## Skills
 - Skills live in .agents/skills/<name>/ (read the SKILL.md in each folder).
