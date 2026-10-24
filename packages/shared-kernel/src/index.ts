@@ -13,3 +13,4 @@ export * from './result';
 export * from './value-object';
 export * from './ports/unit-of-work';
 export * from './ports/current-tenant';
+export * from './ports/event-publisher';

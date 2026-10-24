@@ -27,3 +27,6 @@ export type { AppliedMigration } from './migrations/runner';
 export * from './execution-context';
 export * from './unit-of-work';
 export * from './roles';
+export * from './event-bus';
+export * from './outbox-publisher';
+export * from './outbox-dispatcher';

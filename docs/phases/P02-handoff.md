@@ -34,6 +34,26 @@
 
 ## Status: in progress
 
+## Stage D - transactional outbox and inbox
+
+- Built EventPublisher, PgOutboxPublisher, EventBus/StoredEvent, OutboxDispatcher
+  (start/stop/dispatchOnce/getOutboxStats), migration 0003, and configurable polling,
+  batch size, attempts and backoff. ADR 0014 records accepted cross-tenant access.
+- A standalone leader connection avoids starving an app pool of size one.
+  Each consumer inbox and handler share a transaction; publication acknowledgement
+  is separate. A fixed failure reason avoids retaining payloads in error messages.
+- Evidence: verify:fast passed, 284 unit tests across the working tree. Docker
+  recovered on the subsequent full integration attempt: C tenancy (5), D outbox
+  (2 before the final ordering test), smoke (5), migrations (6), pool (2), API
+  (3) passed. That attempt failed only in the E job provisioning test, since
+  corrected and verified independently. Final full-run evidence follows in E.
+- Skills: test-driven-development, typescript-pro, postgres-best-practices and
+  database-design. Declined ORM/domain framework guidance; the requested bigserial
+  outbox position is a transport sequence, not a domain identity.
+- Public behavior: absent subscribers publish successfully; failed heads block
+  only their practice/aggregate; dead heads stop blocking; Clock drives retries.
+- Gap at this checkpoint: final ordering assertion awaits the full rerun.
+
 ## Stage C - Unit of Work, context, roles and RLS
 
 - Built immutable nested ExecutionContext, PgUnitOfWork/getExecutor with nested

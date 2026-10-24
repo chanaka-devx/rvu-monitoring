@@ -8,6 +8,11 @@ export interface PlatformConfig {
   dbPoolMax: number;
   dbStatementTimeoutMs: number;
   logLevel: LogLevel;
+  outboxPollIntervalMs: number;
+  outboxBatchSize: number;
+  outboxMaxAttempts: number;
+  outboxBackoffBaseMs: number;
+  outboxBackoffMaxMs: number;
 }
 
 export const postgresUrl = z
@@ -33,7 +38,12 @@ const schema = z
     APP_DATABASE_URL: postgresUrl,
     DB_POOL_MAX: z.coerce.number().int().positive().default(10),
     DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(30_000),
-    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info')
+    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1000),
+    OUTBOX_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+    OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().positive().default(10),
+    OUTBOX_BACKOFF_BASE_MS: z.coerce.number().int().positive().default(1000),
+    OUTBOX_BACKOFF_MAX_MS: z.coerce.number().int().positive().default(60000)
   });
 
 export class PlatformConfigError extends Error {
@@ -52,7 +62,12 @@ export function loadPlatformConfig(env: Record<string, string | undefined>): Pla
       appDatabaseUrl: parsed.data.APP_DATABASE_URL,
       dbPoolMax: parsed.data.DB_POOL_MAX,
       dbStatementTimeoutMs: parsed.data.DB_STATEMENT_TIMEOUT_MS,
-      logLevel: parsed.data.LOG_LEVEL
+      logLevel: parsed.data.LOG_LEVEL,
+      outboxPollIntervalMs: parsed.data.OUTBOX_POLL_INTERVAL_MS,
+      outboxBatchSize: parsed.data.OUTBOX_BATCH_SIZE,
+      outboxMaxAttempts: parsed.data.OUTBOX_MAX_ATTEMPTS,
+      outboxBackoffBaseMs: parsed.data.OUTBOX_BACKOFF_BASE_MS,
+      outboxBackoffMaxMs: parsed.data.OUTBOX_BACKOFF_MAX_MS
     };
   }
 
