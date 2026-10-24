@@ -55,7 +55,8 @@ async function run() {
       path.join(repoRoot, 'node_modules', 'vitest', 'vitest.mjs'),
       'run',
       '--config',
-      path.join(repoRoot, 'vitest.int.config.ts')
+      path.join(repoRoot, 'vitest.int.config.ts'),
+      ...process.argv.slice(2).filter((argument) => argument !== '--')
     ],
     {
       cwd: repoRoot,

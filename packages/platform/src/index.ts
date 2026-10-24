@@ -30,3 +30,5 @@ export * from './roles';
 export * from './event-bus';
 export * from './outbox-publisher';
 export * from './outbox-dispatcher';
+export * from './logger';
+export * from './jobs';

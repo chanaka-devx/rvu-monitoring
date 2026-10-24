@@ -1,5 +1,20 @@
 # P02 handoff: platform infrastructure
 
+## Final stage summary
+
+| Stage | Commit | Local evidence |
+| --- | --- | --- |
+| A | a9f150c | integration infrastructure built previously |
+| B | 5781c4a | configuration, pools and migrations built previously |
+| C | 86ffacf | 5 tenancy integration tests passed |
+| D | ecd2d9f | 3 outbox integration tests passed |
+| E | HEAD (`feat(p2e)`) | jobs/HTTP integration, API runtime and generator gates |
+
+The E commit is identified by HEAD in this versioned handoff to avoid a
+self-referential hash. `git log -1 --format=%h` gives its hash at phase completion.
+Historical blocked attempts below are retained as evidence; Docker connectivity
+subsequently recovered and all integration suites executed successfully.
+
 ## Stage C implementation attempt - integration environment blocked
 
 - Loaded the saved user-level DOCKER_HOST into the child command environment;
@@ -32,7 +47,7 @@
   fallback was found at `C:/Users/HP/.codex/skills/database-design/SKILL.md`.
   P01b and P01c handoffs remain absent, as previously recorded below.
 
-## Status: in progress
+## Status: implemented locally; remote CI pending owner push
 
 ## Stage D - transactional outbox and inbox
 
@@ -369,3 +384,60 @@ Commit: `fix(p2pre): banned-import rules must see resolved node_modules imports`
 - vitest unit-run worker RPC timeout (~60 s) is a standing constraint:
   keep per-fixture-heavy test files short or split; watch P7 when more
   arch rules/fixtures accumulate.
+
+## Stage E - jobs, logging, correlation and API composition
+
+### Built and public API
+
+- Platform createLogger (Pino JSON, recursive credential redaction and context
+  mixin), JobRunner (start/stop/enqueue/register), owner-provisioned pg-boss schema
+  migration 0004, and ADR 0015. pg-boss is pinned to 12.38.0 to match the SQL.
+- API PlatformModule exports config, app pool, logger, UnitOfWork, CurrentTenant,
+  EventPublisher tokens, EventBus, OutboxDispatcher and JobRunner. Lifecycle hooks
+  stop workers before pools. Runtime workers use rvu_app with migrations disabled.
+- CorrelationIdMiddleware validates/echoes IDs or generates UUIDv7. Request logs
+  contain method, route template, status, duration and correlation ID. ProblemFilter
+  maps all domain kinds and HttpException statuses, concealing unexpected details.
+- ReadyController executes select 1 with a 2-second deadline. Removed the previous
+  placeholder ready route after the live smoke test exposed duplicate routing;
+  /api/v1/health/live retains its existing behavior.
+- tools/run-api.mjs loads the repo .env and explicitly selects the API tsconfig
+  for legacy Nest decorators. Built start uses node --import tsx because workspace
+  package entrypoints remain TypeScript. test:int now forwards suite arguments.
+- tools/migrate.mjs no longer falls back to an owner-role APP_DATABASE_URL.
+  README and .env.example document all settings and the full local quickstart.
+
+### Evidence
+
+- Final Windows full verify passed: 283 unit tests (30 suites), 25 integration
+  tests (7 suites), typecheck, lint and architecture. Includes C RLS, D delivery,
+  E HTTP and runtime-role job handling after removing the placeholder route.
+  Fast gate also passed in earlier stage runs.
+- API build succeeded. Built correlation adapter and Vitest both loaded the
+  shared kernel/uuid ESM and generated UUIDv7 successfully on Node 22.18.
+- Local db:up healthy; db:bootstrap succeeded using the documented development
+  password; db:migrate applied platform/3 and platform/4. curl.exe returned
+  HTTP 200 with {"status":"ok"} from /api/v1/health/ready. API was stopped after.
+- Existing .env was preserved: it lacked APP_DB_PASSWORD, so dev values were
+  supplied only to child commands. Bootstrap's first attempt rejected missing config.
+- Generator gate: sample created, install/typecheck/lint/arch passed, sample removed,
+  install passed, lockfile restored exactly to its intentional dependency state.
+- No pushes, merges, branch switches, rebases or amendments. Initial handoff edits
+  were ours from prior attempts; no unrelated changes were overwritten.
+
+### Decisions, dependencies and remaining gaps
+
+- pg-boss exported construction plans include BEGIN/COMMIT; these are stripped
+  because runMigrations owns each transaction. Queue migrations must supply an
+  explicit policy. exclusive policy supplies outstanding singletonKey deduplication.
+- Runtime supervision/scheduling are disabled; a dedicated maintenance process is
+  still needed before production (backlog). Owners must provision queues and grants.
+- Dependencies: platform pg-boss/pino, API platform/kernel workspace links, API dev
+  Nest testing/supertest/types/testing workspace link. No new root dependency.
+- Skills used: test-driven-development, typescript-pro, nestjs-expert,
+  postgres-best-practices, database-design, docker-expert. Used the global fallback
+  for the absent local database-design skill. Declined ORM entities/decorators in
+  domain, framework imports in platform, Docker Desktop/bind mounts and domain
+  serial IDs; project rules and ADRs take precedence. No agents were delegated.
+- CI matrix and Ubuntu integration status remain pending the owner's push.
+  P01b/P01c handoffs were absent; prior notes above record that input gap.

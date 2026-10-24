@@ -19,6 +19,8 @@
     "@rvu/shared-kernel": "workspace:*",
     "kysely": "^0.28.0",
     "pg": "^8.13.0",
+    "pg-boss": "12.38.0",
+    "pino": "^10.4.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

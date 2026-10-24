@@ -28,9 +28,14 @@ if (!env.DATABASE_URL && env.POSTGRES_DB) {
   const database = env.POSTGRES_DB;
   const url = `postgres://${user}:${password}@localhost:${port}/${database}`;
   env.DATABASE_URL = url;
-  if (!env.APP_DATABASE_URL) {
-    env.APP_DATABASE_URL = url;
-  }
+}
+
+// Migration config needs an app URL but must never silently reuse the owner role.
+if (!env.APP_DATABASE_URL && env.DATABASE_URL) {
+  const appUrl = new URL(env.DATABASE_URL);
+  appUrl.username = 'rvu_app';
+  appUrl.password = env.APP_DB_PASSWORD ?? '';
+  env.APP_DATABASE_URL = appUrl.toString();
 }
 
 const result = spawnSync(

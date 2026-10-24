@@ -37,3 +37,11 @@
 - Stage B note: APP_DATABASE_URL currently defaults to the admin URL in
   tools/migrate.mjs; Stage D must introduce the rvu_app restricted role and
   tighten this.
+
+- P2 resolved the restricted runtime role and migration-tool URL fallback. Kernel
+  uuid ESM imports passed from API built output and Vitest on Node 22.18.
+- P2 jobs: provision a dedicated pg-boss maintenance process before production;
+  runtime workers currently disable supervision and scheduling to avoid DDL
+  privileges. Queue owners must use exclusive policy for singletonKey queues.
+- P2 CI: owner must push and observe the Ubuntu integration job and both OS
+  fast-gate jobs. No push was performed by the agent.

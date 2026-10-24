@@ -190,9 +190,37 @@ GitHub Actions runs typecheck, lint, architecture and unit tests on
 `ubuntu-latest` only that runs the Testcontainers suite. Windows does not run
 integration tests in CI. Docker and the environment check are not run in the
 verify matrix.
+# Runtime database role
 
-## Runtime database role
+## P2 platform quickstart
+
+Copy `.env.example` to `.env` and replace development credentials as needed.
+Keep `DATABASE_URL` and `APP_DATABASE_URL` aligned with `DB_PORT`.
+
+```powershell
+pnpm install
+pnpm db:up
+pnpm db:bootstrap
+pnpm db:migrate
+pnpm dev:api
+# In another terminal:
+curl.exe http://localhost:3000/api/v1/health/ready
+```
+
+The API command loads the repository `.env`. `/health/live` remains the liveness
+probe. Jobs require owner-provisioned queues in module migrations; workers never
+create tables or migrate schemas. See ADR 0015 for grants and maintenance needs.
+Set `OUTBOX_DISPATCHER=off` to disable polling during a diagnostic run.
+
+```powershell
+$env:DOCKER_HOST='tcp://127.0.0.1:2375'
+pnpm test:int -- packages/platform/src/tenancy.int.test.ts
+```
+
+Integration tests use a throwaway container; `db:*` commands use the shared dev
+database. `verify:fast` requires no Docker; `verify` includes integration tests.
 
 Run `pnpm db:bootstrap` before `pnpm db:migrate`. Set `APP_DB_PASSWORD` and
-`APP_DATABASE_URL` in `.env`; runtime connects as rvu_app. Owners run migrations;
-production role provisioning belongs to operators. See ADR 0013.
+`APP_DATABASE_URL` in `.env`; the API uses the restricted `rvu_app` login.
+The owner `DATABASE_URL` is reserved for bootstrap and migrations. When changing
+`DB_PORT`, update both URLs to match. Production roles are provisioned by operators.
