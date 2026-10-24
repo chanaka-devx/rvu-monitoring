@@ -16,7 +16,10 @@
   },
   "dependencies": {
     "@rvu/shared-kernel": "workspace:*",
-    "fast-check": "^4.0.0"
+    "@testcontainers/postgresql": "^11.0.0",
+    "fast-check": "^4.0.0",
+    "pg": "^8.13.0",
+    "testcontainers": "^11.0.0"
   },
   "devDependencies": {
     "@types/pg": "^8.11.0",
