@@ -400,6 +400,61 @@ describe('percentOf', () => {
   });
 });
 
+describe('scale validation', () => {
+  it.each([-1, -100, 0.5, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'divide rejects scale %p with decimal/invalid-scale',
+    (scale) => {
+      const result = parseOk('1').divide(parseOk('3'), scale);
+      expect(result).toMatchObject(isErrValidation);
+      if (!result.ok) {
+        expect(result.error.code).toBe('decimal/invalid-scale');
+        expect(result.error.details).toEqual({ scale });
+      }
+    }
+  );
+
+  it.each([-1, -100, 0.5, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'percentOf rejects scale %p with decimal/invalid-scale',
+    (scale) => {
+      const result = parseOk('368').percentOf(parseOk('500'), scale);
+      expect(result).toMatchObject(isErrValidation);
+      if (!result.ok) {
+        expect(result.error.code).toBe('decimal/invalid-scale');
+        expect(result.error.details).toEqual({ scale });
+      }
+    }
+  );
+
+  it.each([-1, 0.5, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'toFixed with an invalid scale throws',
+    (scale) => {
+      expect(() => parseOk('1.25').toFixed(scale)).toThrow();
+    }
+  );
+
+  it.each([-1, 0.5, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'round with an invalid scale throws',
+    (scale) => {
+      expect(() => parseOk('1.25').round(scale)).toThrow();
+    }
+  );
+
+  it('accepts scale 0 for divide and percentOf', () => {
+    const quotient = parseOk('2.5').divide(parseOk('2'), 0);
+    if (quotient.ok) {
+      expect(quotient.value.toFixed(0)).toBe('1');
+    } else {
+      expect.unreachable('2.5/2 with scale 0 must compute');
+    }
+    const percent = parseOk('368').percentOf(parseOk('500'), 0);
+    if (percent.ok) {
+      expect(percent.value.toFixed(0)).toBe('74');
+    } else {
+      expect.unreachable('368 of 500 with scale 0 must compute');
+    }
+  });
+});
+
 describe('no float escape hatches', () => {
   it('exposes no toNumber and no float constructor', () => {
     expect(Object.getOwnPropertyNames(DecimalValue.prototype)).not.toContain('toNumber');
