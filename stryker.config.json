@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/api/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "reporter": ["clear-text", "progress"],
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "modules/crediting/domain/credit-calculator.ts",
+    "modules/crediting/domain/modifier-rules.ts"
+  ],
+  "configFile": "vitest.config.ts",
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "tempDirName": "stryker-tmp",
+  "cleanTempDir": true
+}
