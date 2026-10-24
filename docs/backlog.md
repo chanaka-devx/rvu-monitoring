@@ -45,3 +45,15 @@
   privileges. Queue owners must use exclusive policy for singletonKey queues.
 - P2 CI: owner must push and observe the Ubuntu integration job and both OS
   fast-gate jobs. No push was performed by the agent.
+
+- P2f repair (owner-authorized, out of P2 scope): merge c19728b silently reverted
+  P1b work in three files - packages/testing/package.json lost
+  "@rvu/shared-kernel": workspace:* and "fast-check": ^4.0.0,
+  .dependency-cruiser.cjs lost the testing-package-only-from-tests and
+  test-tooling-only-from-tests rules plus the exclusion regex that keeps test
+  tooling node_modules edges visible, and packages/testing/src/index.ts lost the
+  P1b exports (expectOk, FixedClock, arbitraries, briefScenario, builders, csv).
+  All restored from commit 06c15c3 (dependency-cruiser exclude lookahead extended
+  with .pnpm-stub so the P2 resolved-NestJS fixture keeps working). Verify gate
+  is green again; check future merges so that main-side and branch-side package
+  manifests and boundary configs are reconciled instead of taking one side.
