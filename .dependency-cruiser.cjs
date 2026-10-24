@@ -347,7 +347,7 @@ function buildConfig(rootDir = process.cwd()) {
     to: { circular: true }
   });
 
-  const excludePath = String.raw`^(?!.*(?:^|/)node_modules/(?:@testcontainers/|(?:vitest|fast-check|testcontainers)(?:/|$))).*(?:^|/)(?:dist|coverage|\.turbo)/`;
+  const excludePath = String.raw`^(?!.*(?:^|/)node_modules/(?:@testcontainers/|(?:vitest|fast-check|testcontainers)(?:/|$)|\.pnpm-stub)).*(?:^|/)(?:dist|coverage|\.turbo)/`;
 
   return {
     forbidden,
