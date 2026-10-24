@@ -23,7 +23,8 @@
     "db:check": "node tools/db.mjs check",
     "db:migrate": "node tools/migrate.mjs",
     "gen:module": "node tools/generate-module/index.mjs",
-    "dev:api": "pnpm --filter @rvu/api dev"
+    "dev:api": "pnpm --filter @rvu/api dev",
+    "db:bootstrap": "node tools/bootstrap.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

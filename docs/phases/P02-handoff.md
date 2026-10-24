@@ -1,6 +1,58 @@
 # P02 handoff: platform infrastructure
 
+## Stage C implementation attempt - integration environment blocked
+
+- Loaded the saved user-level DOCKER_HOST into the child command environment;
+  `pnpm.cmd env:check` passed without the DOCKER_HOST warning.
+- Added context tests, kernel UnitOfWork/CurrentTenant interfaces and exports,
+  an AsyncLocalStorage context adapter, and tenancy integration tests. Added the
+  platform's shared-kernel workspace dependency; install has not yet run.
+- Context tests were observed failing on the missing adapter before implementation.
+  Tenancy tests are not validated: roles and UoW adapters are still absent.
+- Integration attempt first failed with no working container runtime strategy;
+  `pnpm.cmd test:int` confirmed the Docker TCP endpoint was unreachable.
+  Ran the documented `wsl docker ps` wake-up (existing containers only).
+  A retry reached Vitest but global setup failed with `socket hang up`
+  (`ECONNRESET`) before any tests ran. Stage A infrastructure is therefore not
+  currently operational in this environment. Stopped per the stage gate rule.
+- Stage C is incomplete; no stage commit was made. Preserve the uncommitted
+  files for continuation after Docker TCP/Testcontainers connectivity is restored.
+
+## Stage C resume preflight - blocked
+
+- Branch `p2` was clean at the start of the resumed session; Stage A and B
+  commits are `a9f150c` and `5781c4a`.
+- `pnpm.cmd env:check` outside the sandbox confirms WSL Docker Engine and
+  Docker Compose are reachable, but reports that `DOCKER_HOST` is unset.
+  The P2 preflight explicitly requires this variable, so Stage C has not
+  started. No implementation changes or stage commit were made.
+- Set the user-level `DOCKER_HOST=tcp://localhost:2375` and restart the agent
+  process so it inherits the variable before resuming Stage C.
+- Required `database-design` skill is absent from `.agents/skills`; its
+  fallback was found at `C:/Users/HP/.codex/skills/database-design/SKILL.md`.
+  P01b and P01c handoffs remain absent, as previously recorded below.
+
 ## Status: in progress
+
+## Stage C - Unit of Work, context, roles and RLS
+
+- Built immutable nested ExecutionContext, PgUnitOfWork/getExecutor with nested
+  transaction joining, CurrentTenant, role bootstrap, tenant RLS helpers, and
+  a testing runtime URL helper. Public APIs are exported from package entries.
+- Added db:bootstrap (tsx, same strategy as migrations), local credential
+  examples and role setup documentation. ADR 0013 records security boundaries
+  and future aggregate version hydration guidance.
+- Evidence: pnpm verify:fast passed (280 tests). pnpm test:int failed at the
+  Docker TCP preflight; integration validation is pending. The owner explicitly
+  authorized continuing D/E despite blocked testing. C integration tests cover
+  tenant isolation, insert/update denial, FORCE owner behavior, runtime role
+  restrictions, commit/rollback/nesting and no connection-setting leakage.
+- Skills: test-driven-development, typescript-pro, postgres-best-practices,
+  database-design, docker-expert; nestjs-expert reserved for E. Declined ORM,
+  domain decorators, serial domain IDs, Docker Desktop and bind mounts in favor
+  of project hard rules. Outbox sequence IDs remain the specified exception.
+- Gaps: integration tests have not executed; no live bootstrap/migration proof.
+  Previous interrupted C files and handoff edits were ours and preserved.
 
 Stages are appended below as they complete. One commit per stage
 (`feat(p2<letter>): <summary>`), stage gate green before the next stage

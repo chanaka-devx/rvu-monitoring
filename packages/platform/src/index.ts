@@ -24,3 +24,6 @@ export {
   runMigrations
 } from './migrations/runner';
 export type { AppliedMigration } from './migrations/runner';
+export * from './execution-context';
+export * from './unit-of-work';
+export * from './roles';

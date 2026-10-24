@@ -36,6 +36,7 @@ pnpm db:down        stop Postgres
 pnpm db:ps          show container status
 pnpm db:check       confirm localhost:DB_PORT is reachable from Windows
 pnpm db:migrate     run the TS migration runner (schema_migrations bookkeeping)
+pnpm db:bootstrap   provision the local restricted runtime database role
 
 ## Skills
 - Skills live in .agents/skills/<name>/ (read the SKILL.md in each folder).

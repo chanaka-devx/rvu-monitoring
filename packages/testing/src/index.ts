@@ -1,4 +1,5 @@
 import './postgres/provided-context';
+export { appDatabaseUrl } from './postgres/app-database-url';
 
 export { POSTGRES_IMAGE } from './postgres/image';
 export { startPostgresContainer, type PostgresContainerHandle } from './postgres/container';

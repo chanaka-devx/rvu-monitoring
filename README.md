@@ -190,3 +190,9 @@ GitHub Actions runs typecheck, lint, architecture and unit tests on
 `ubuntu-latest` only that runs the Testcontainers suite. Windows does not run
 integration tests in CI. Docker and the environment check are not run in the
 verify matrix.
+
+## Runtime database role
+
+Run `pnpm db:bootstrap` before `pnpm db:migrate`. Set `APP_DB_PASSWORD` and
+`APP_DATABASE_URL` in `.env`; runtime connects as rvu_app. Owners run migrations;
+production role provisioning belongs to operators. See ADR 0013.
