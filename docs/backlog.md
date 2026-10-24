@@ -23,6 +23,10 @@
 - **P1b arbitraries.** The property-test generators for decimals and dates
   are defined inline per test file; extract reusable fast-check arbitraries
   into `packages/testing` in P1b as planned.
+- **Typecheck acceptance tests.** `tests/acceptance/*.test.ts` (and
+  `packages/testing` colocated tests) are not covered by any package
+  tsconfig; they run through vitest/SWC only. The item above applies to them
+  too once a shared test-tsconfig approach is chosen.
 
 
 - Typecheck test files (they are excluded from package tsconfigs). Do before P7.
@@ -31,17 +35,8 @@
 - Confirm uuid ^14 works when apps/api imports the kernel (ESM-only risk), and
   that CI uses Node 22.12 or newer. Check in P2.
 - Skills map: P1b uses clean-code only (ddd-tactical-patterns was P1a).
-- Stage B note: vitest worker RPC timeout (~60 s) caps how much sequential
-  dependency-cruiser spawning one test file may do; split heavy fixture
-  files (see arch-platform.test.mjs) and re-check when adding rules in P7.
-- Stage B note: APP_DATABASE_URL currently defaults to the admin URL in
-  tools/migrate.mjs; Stage D must introduce the rvu_app restricted role and
-  tighten this.
-
-- P2 resolved the restricted runtime role and migration-tool URL fallback. Kernel
-  uuid ESM imports passed from API built output and Vitest on Node 22.18.
-- P2 jobs: provision a dedicated pg-boss maintenance process before production;
-  runtime workers currently disable supervision and scheduling to avoid DDL
-  privileges. Queue owners must use exclusive policy for singletonKey queues.
-- P2 CI: owner must push and observe the Ubuntu integration job and both OS
-  fast-gate jobs. No push was performed by the agent.
+- **Brief-scenario dataset size.** The brief fixture hand-builds 63 lines;
+  if P8/P9 want a large-scale golden test, add a `generateDataset` variant
+  with bounded `linesPerDay` reusing the brief's resolutions, rather than
+  extending the hand-built fixture.
+- **Visible npm endpoints in the arch report.** The P1c exclude change (ADR 0009) keeps vitest/fast-check/testcontainers dependencies visible in the report; other direct npm imports are now reported too (e.g. decimal.js). If the module/dependency counts balloon once production dependencies land in P2+ (NestJS, drizzle), tighten the exclude granularity.

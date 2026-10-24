@@ -154,6 +154,38 @@ describe('architecture guardrails', () => {
     expect(violationRuleNames(report)).toContain('no-circular');
   });
 
+  it('rejects a production file importing the testing package by package name and by relative path', () => {
+    const { report } = runFixture('testing-package-in-production');
+
+    const froms = violationFromPaths(report, 'testing-package-only-from-tests').sort();
+
+    expect(violationRuleNames(report)).toContain('testing-package-only-from-tests');
+    expect(froms).toEqual(['apps/api/src/bad-name.ts', 'apps/api/src/bad-path.ts']);
+  });
+
+  it('rejects a production file importing test tooling', () => {
+    const { report } = runFixture('test-tooling-in-production');
+
+    const froms = [...new Set(violationFromPaths(report, 'test-tooling-only-from-tests'))];
+
+    expect(violationRuleNames(report)).toContain('test-tooling-only-from-tests');
+    expect(froms).toEqual(['modules/sample/domain/bad.ts']);
+  });
+
+  it('keeps the allowed test-support edges in the clean fixture', () => {
+    const { report } = runFixture('clean');
+
+    const modules = new Map(report.modules.map((module) => [module.source, module]));
+    const namesOf = (source) =>
+      (modules.get(source)?.dependencies ?? []).map((dependency) => dependency.resolved ?? dependency.name);
+    const hasDependency = (source, pattern) => namesOf(source).some((name) => pattern.test(name));
+
+    expect(hasDependency('packages/testing/src/index.ts', /(^|\/)fast-check(?:\/|$)/)).toBe(true);
+    expect(hasDependency('modules/beta/domain/beta.test.ts', /^@rvu\/testing(?:\/|$)|\/@rvu\/testing\//)).toBe(true);
+    expect(hasDependency('modules/beta/domain/beta.test.ts', /(^|\/)vitest(?:\/|$)/)).toBe(true);
+    expect(hasDependency('tests/harness/test-support.ts', /packages\/testing/)).toBe(true);
+  });
+
   it('fails the architecture command on a deliberately illegal fixture', () => {
     const { status } = runDepcruise(path.join(fixturesRoot, 'domain-nest'), {
       outputType: 'err'
