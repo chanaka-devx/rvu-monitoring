@@ -40,3 +40,12 @@
   with bounded `linesPerDay` reusing the brief's resolutions, rather than
   extending the hand-built fixture.
 - **Visible npm endpoints in the arch report.** The P1c exclude change (ADR 0009) keeps vitest/fast-check/testcontainers dependencies visible in the report; other direct npm imports are now reported too (e.g. decimal.js). If the module/dependency counts balloon once production dependencies land in P2+ (NestJS, drizzle), tighten the exclude granularity.
+
+- **P07: brief-scenario fixture vs ReviewReason.** When the crediting
+  application layer (P11) consumes acceptance fixtures, align the hand-built
+  brief-scenario expectations with the shipped `ReviewReason` values (for
+  example `status_requires_review`, `no_schedule_available`) instead of the
+  looser descriptors used today.
+- **P07: encounter-level modifier rules.** `resolveModifiers` treats every
+  line independently; encounter-level aggregation (bundled codes sharing one
+  visit resolving to a single payment, per CMS rules) is a later phase.
